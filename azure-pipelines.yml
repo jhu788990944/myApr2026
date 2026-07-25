@@ -1,9 +1,6 @@
 trigger:
 - main
 
-pool:
-  vmImage: 'ubuntu-latest'
-
 variables:
   imageRepository: 'html-site'
   acrName: 'myapr2026acr'
@@ -11,33 +8,63 @@ variables:
   aksCluster: 'skecluster1'
   tag: 'v1'
 
-steps:
+stages:
 
-# Build and Push Docker Image
-- task: Docker@2
+# ==========================
+# Stage 1 - Build
+# ==========================
+- stage: Build
   displayName: 'Build and Push Docker Image'
-  inputs:
-    command: buildAndPush
-    repository: $(imageRepository)
-    dockerfile: Dockerfile
-    containerRegistry: acr-connection
-    tags: |
-      $(tag)
 
-# Deploy to AKS
-- task: AzureCLI@2
+  jobs:
+  - job: BuildJob
+    displayName: 'Build Image'
+
+    pool:
+      vmImage: 'ubuntu-latest'
+
+    steps:
+
+    - task: Docker@2
+      displayName: 'Build and Push Docker Image'
+      inputs:
+        command: buildAndPush
+        repository: $(imageRepository)
+        dockerfile: Dockerfile
+        containerRegistry: acr-connection
+        tags: |
+          $(tag)
+
+# ==========================
+# Stage 2 - Deploy
+# ==========================
+- stage: Deploy
   displayName: 'Deploy to AKS'
-  inputs:
-    azureSubscription: 'azure-connection'
-    scriptType: bash
-    scriptLocation: inlineScript
-    inlineScript: |
-      az aks get-credentials \
-        --resource-group $(resourceGroup) \
-        --name $(aksCluster) \
-        --overwrite-existing
+  dependsOn: Build
+  condition: succeeded()
 
-      kubectl apply -f deployment.yaml
-      kubectl apply -f service.yaml
+  jobs:
+  - job: DeployJob
+    displayName: 'Deploy Application'
 
-      kubectl rollout status deployment/html-site
+    pool:
+      vmImage: 'ubuntu-latest'
+
+    steps:
+
+    - task: AzureCLI@2
+      displayName: 'Deploy to AKS'
+      inputs:
+        azureSubscription: 'azure-connection'
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          az aks get-credentials \
+            --resource-group $(resourceGroup) \
+            --name $(aksCluster) \
+            --overwrite-existing
+
+          kubectl apply -f deployment.yaml
+          kubectl apply -f service.yaml
+
+          kubectl rollout status deployment/html-site
