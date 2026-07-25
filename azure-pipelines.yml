@@ -5,17 +5,18 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
+  acrName: 'myapr2026acr'
   imageRepository: 'html-site'
-  dockerfilePath: 'Dockerfile'
   tag: '$(Build.BuildId)'
 
 steps:
 
 - task: Docker@2
-  displayName: Build Docker Image
+  displayName: Build and Push Image
   inputs:
-    command: build
-    Dockerfile: $(dockerfilePath)
-    repository: $(imageRepository)
+    containerRegistry: 'acr-connection'
+    repository: '$(imageRepository)'
+    command: 'buildAndPush'
+    Dockerfile: 'Dockerfile'
     tags: |
       $(tag)
