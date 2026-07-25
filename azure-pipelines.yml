@@ -5,18 +5,39 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  acrName: 'myapr2026acr'
   imageRepository: 'html-site'
-  tag: '$(Build.BuildId)'
+  acrName: 'myapr2026acr'
+  resourceGroup: 'kubernati'
+  aksCluster: 'skecluster1'
+  tag: 'v1'
 
 steps:
 
+# Build and Push Docker Image
 - task: Docker@2
-  displayName: Build and Push Image
+  displayName: 'Build and Push Docker Image'
   inputs:
-    containerRegistry: 'acr-connection'
-    repository: '$(imageRepository)'
-    command: 'buildAndPush'
-    Dockerfile: 'Dockerfile'
+    command: buildAndPush
+    repository: $(imageRepository)
+    dockerfile: Dockerfile
+    containerRegistry: acr-connection
     tags: |
       $(tag)
+
+# Deploy to AKS
+- task: AzureCLI@2
+  displayName: 'Deploy to AKS'
+  inputs:
+    azureSubscription: 'azure-connection'
+    scriptType: bash
+    scriptLocation: inlineScript
+    inlineScript: |
+      az aks get-credentials \
+        --resource-group $(resourceGroup) \
+        --name $(aksCluster) \
+        --overwrite-existing
+
+      kubectl apply -f deployment.yaml
+      kubectl apply -f service.yaml
+
+      kubectl rollout status deployment/html-site
