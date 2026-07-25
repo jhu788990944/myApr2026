@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: myapr2026-site
-        image: khalidale/myapr2026-site:latest
+        image: zouraiz212/myapr2026-site:latest
         ports:
         - containerPort: 80
 ---
