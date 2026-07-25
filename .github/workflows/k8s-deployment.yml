@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapr2026-site
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: myapr2026-site
+  template:
+    metadata:
+      labels:
+        app: myapr2026-site
+    spec:
+      containers:
+      - name: myapr2026-site
+        image: khalidale/myapr2026-site:latest
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: myapr2026-site-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: myapr2026-site
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
